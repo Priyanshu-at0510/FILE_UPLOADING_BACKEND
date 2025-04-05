@@ -35,6 +35,7 @@ function isFileTypeSupported(type,supportedTypes){
 
 async function uploadFileToCloudinary(file,folder){
     const options={folder};
+    options.resource_type="auto";
     return await cloudinary.uploader.upload(file.tempFilePath,options);
 }
 //image upload ka handler
@@ -73,6 +74,67 @@ exports.imageUpload=async (req,res)=>{
             imageUrl:response.secure_url,
             message:"Image Successfully Uploaded to cloudinary"
         }) 
+
+    } catch (error) {
+        console.log(error);
+        res.status(401).json({
+            success:false,
+            message:"File is Not Uploaded in Cloudinary ,Something went wrong"
+        })
+    }
+}
+
+
+//video upload handler
+exports.videoUpload =async (req,res)=>{
+    try {
+        //fetch the data
+        const {name,tags,email}=req.body;
+        console.log(name,tags,email);
+        //recieve the file
+        const file=req.files.videoFile;
+        console.log(file);
+        // TYPE validation
+        const supportedTypes=["mp4","mov"];
+        const myFileType=file.name.split('.')[1].toLowerCase();
+        console.log("File Type :",myFileType);
+        if(!isFileTypeSupported(myFileType,supportedTypes)){
+            return res.status(400).json({
+                success:false,
+                message:"File Format is not supported"
+            });
+        }
+        //SIZE validation
+        const MAX_SIZE=100*1024*1024;
+        console.log("File Size :", file.size)
+        if(file.size > MAX_SIZE){
+            return res.status(402).json({
+                success:false,
+                message:"File size is more than 5MB ,please Reduce its size and then upload",
+            })
+        }
+
+        //upload To Cloudinary
+        console.log("uploading to ISHU folder in cloudinary")
+        const response=await uploadFileToCloudinary(file,"ISHU");
+        console.log(response);
+
+        //upload to db
+        const fileData=await File.create({
+            name,
+            tags,
+            email,
+            imageUrl:response.secure_url,
+
+        });
+
+        res.status(200).json({
+            success:true,
+            imageUrl:response.secure_url,
+            message:"video Successfully Uploaded to cloudinary and Database"
+        });
+         
+
 
     } catch (error) {
         console.log(error);

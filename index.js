@@ -10,6 +10,7 @@ app.use(express.json());
 const fileupload=require("express-fileupload"); //use for making interaction between express and files
 app.use(fileupload({
     useTempFiles:true,
+    tempFileDir: '/tmp/'
 })); //this method will upload the file into server
 
 //connect with DB
