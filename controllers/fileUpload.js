@@ -33,9 +33,12 @@ function isFileTypeSupported(type,supportedTypes){
     return supportedTypes.includes(type);
 }
 
-async function uploadFileToCloudinary(file,folder){
+async function uploadFileToCloudinary(file,folder,quality){
     const options={folder};
     options.resource_type="auto";
+    if(quality){
+        options.quality=quality;
+    }
     return await cloudinary.uploader.upload(file.tempFilePath,options);
 }
 //image upload ka handler
@@ -136,6 +139,51 @@ exports.videoUpload =async (req,res)=>{
          
 
 
+    } catch (error) {
+        console.log(error);
+        res.status(401).json({
+            success:false,
+            message:"File is Not Uploaded in Cloudinary ,Something went wrong"
+        })
+    }
+}
+
+//imageSize reducer handler
+exports.imageReducerUpload=async (req,res)=>{
+    try {
+        //fetch the data
+        const {name,tags,email}=req.body;
+        console.log(name,tags,email);
+        //recieve the file
+        const file=req.files.imageFile;
+        console.log(file);
+        //validation
+        const supportedTypes=["jpg","jpeg","png"];
+        const myFileType = file.name.split('.')[1].toLowerCase();
+        console.log("File Type :",myFileType);
+        if(!isFileTypeSupported(myFileType,supportedTypes)){
+         return res.status(400).json({
+            success:false,
+            message:"File format not supported",
+         })
+        }
+        
+        //file format supported hai
+        const response=await uploadFileToCloudinary(file,"Ishu",30);
+        console.log(response);
+        //DB me entry save karni hai
+        const fileData=await File.create({
+            name,
+            tags,
+            email,
+            imageUrl:response.secure_url,
+        })
+
+        res.status(200).json({
+            success:true,
+            imageUrl:response.secure_url,
+            message:"Image Successfully Uploaded to cloudinary after reducing size"
+        }) 
     } catch (error) {
         console.log(error);
         res.status(401).json({
